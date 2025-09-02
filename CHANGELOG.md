@@ -12,3 +12,6 @@
 - Added ci.yml. Integrated github workflow
 - Dockerized the application
 - Created flask_api.py to run app in Flask
+
+## [1.0.2] - 2025-09-02
+- Updated ci.yml to trigger only on PR merge
