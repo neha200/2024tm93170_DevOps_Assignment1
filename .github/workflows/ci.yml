@@ -1,24 +1,46 @@
-name: CI (Docker build & pytest)
+name: CI (Changelog-gated, Build & Push to Docker Hub)
 
 on:
-  push:
+  # Run on PRs *into main* when CHANGELOG.md changed
   pull_request:
+    branches: [ main ]
+    paths:
+      - "CHANGELOG.md"
+
+  # Run when commits land on main *and* CHANGELOG.md changed
+  push:
+    branches: [ main ]
+    paths:
+      - "CHANGELOG.md"
 
 jobs:
   build-and-test:
+    name: Build & Test (only if CHANGELOG.md changed)
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Optional: fail fast if the changelog doesn't have a new entry format.
+      # Example rule: require a line starting with "## " added in this commit/PR.
+      - name: Verify CHANGELOG has a new entry
+        run: |
+          if ! git diff --unified=0 HEAD^ -- CHANGELOG.md | grep -E "^\+## "; then
+            echo "No new '## ' entry found in CHANGELOG.md"
+            exit 1
+          fi
 
       - name: Build Docker image
-        run: docker build -t aceest-fitness:${{ github.sha }} .
+        run: docker build -t app:${{ github.sha }} .
 
-      # - name: Run tests inside the image
-      #   run: docker run --rm aceest-fitness:${{ github.sha }} pytest -q
+      # - name: Run tests in container
+      #   run: docker run --rm app:${{ github.sha }} pytest -q
 
       - name: Smoke check /health
         run: |
-          CID=$(docker run -d -p 8000:8000 aceest-fitness:${{ github.sha }})
+          CID=$(docker run -d -p 8000:8000 app:${{ github.sha }})
           sleep 2
           curl -fsS http://localhost:8000/health | grep -q '"ok"'
           docker rm -f "$CID" >/dev/null 2>&1 || true
