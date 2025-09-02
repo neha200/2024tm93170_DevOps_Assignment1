@@ -35,8 +35,8 @@ jobs:
       - name: Build Docker image
         run: docker build -t app:${{ github.sha }} .
 
-      # - name: Run tests in container
-      #   run: docker run --rm app:${{ github.sha }} pytest -q
+      - name: Run tests in container
+        run: docker run --rm app:${{ github.sha }} pytest -q
 
       - name: Smoke check /health
         run: |
