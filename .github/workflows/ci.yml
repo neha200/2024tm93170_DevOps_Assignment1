@@ -1,0 +1,24 @@
+name: CI (Docker build & pytest)
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t aceest-fitness:${{ github.sha }} .
+
+      - name: Run tests inside the image
+        run: docker run --rm aceest-fitness:${{ github.sha }} pytest -q
+
+      - name: Smoke check /health
+        run: |
+          CID=$(docker run -d -p 8000:8000 aceest-fitness:${{ github.sha }})
+          sleep 2
+          curl -fsS http://localhost:8000/health | grep -q '"ok"'
+          docker rm -f "$CID" >/dev/null 2>&1 || true
