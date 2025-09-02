@@ -20,6 +20,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Optional: fail fast if the changelog doesn't have a new entry format.
       # Example rule: require a line starting with "## " added in this commit/PR.
