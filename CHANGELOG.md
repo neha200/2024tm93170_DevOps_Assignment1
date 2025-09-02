@@ -15,3 +15,7 @@
 
 ## [1.0.2] - 2025-09-02
 - Updated ci.yml to trigger only on PR merge
+
+## [1.0.3] - 2025-09-02
+- Added pytest for flask_api.py
+- Enabled pytest in ci.yml

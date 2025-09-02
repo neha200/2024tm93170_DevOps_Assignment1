@@ -1,12 +1,7 @@
 from flask import Flask, jsonify, request, abort
+from . import store
+
 app = Flask(__name__)
-
-_members = [
-    {"id": 1, "name": "Sam", "plan": "monthly"},
-    {"id": 2, "name": "Riya", "plan": "annual"},
-]
-
-def _next_id(): return max((m["id"] for m in _members), default=0) + 1
 
 @app.get("/health")
 def health():
@@ -16,20 +11,22 @@ def health():
 def index():
     return jsonify({"message": "ACEest Fitness API"}), 200
 
-@app.get("/api/members")
-def list_members():
-    return jsonify(_members), 200
+# ---- Workouts API (matches flask_web.py behavior) ----
 
-@app.post("/api/members")
-def create_member():
+@app.get("/api/workouts")
+def api_list_workouts():
+    return jsonify(store.list_workouts()), 200
+
+@app.post("/api/workouts")
+def api_create_workout():
+    # Accept JSON: {"workout": "Run", "duration": 30}
     if not request.is_json:
-        abort(400, "Expected JSON")
+        abort(400, "Expected JSON body")
     data = request.get_json(silent=True) or {}
-    name, plan = data.get("name"), data.get("plan")
-    if not name or not plan:
-        abort(400, "name and plan required")
-    item = {"id": _next_id(), "name": name, "plan": plan}
-    _members.append(item)
+    try:
+        item = store.add_workout(data.get("workout"), data.get("duration"))
+    except ValueError as e:
+        abort(400, str(e))
     return jsonify(item), 201
 
 if __name__ == "__main__":
