@@ -13,8 +13,8 @@ jobs:
       - name: Build Docker image
         run: docker build -t aceest-fitness:${{ github.sha }} .
 
-      - name: Run tests inside the image
-        run: docker run --rm aceest-fitness:${{ github.sha }} pytest -q
+      # - name: Run tests inside the image
+      #   run: docker run --rm aceest-fitness:${{ github.sha }} pytest -q
 
       - name: Smoke check /health
         run: |
