@@ -34,3 +34,6 @@
 
 ## [1.0.7] - 2025-09-03
 - Update CI to push Images of API and Web to Docker Hub
+
+## [1.0.8] - 2025-09-03
+- Final commit to the repo with changes
