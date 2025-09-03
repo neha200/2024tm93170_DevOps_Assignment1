@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request, abort
-from . import store
+from App import store
 
 app = Flask(__name__)
 

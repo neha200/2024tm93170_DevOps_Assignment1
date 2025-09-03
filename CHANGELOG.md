@@ -23,3 +23,8 @@
 
 ## [1.0.4] - 2025-09-02
 - Update github workflow to follow different run/build pattern for main and for feature-branch
+
+## [1.0.5] - 2025-09-03
+- Added falsk_web.py for application UI
+- Added UI folder with html files for look and feel of the application
+- Fix falsk_api.py import of store
