@@ -28,3 +28,6 @@
 - Added falsk_web.py for application UI
 - Added UI folder with html files for look and feel of the application
 - Fix falsk_api.py import of store
+
+## [1.0.6] - 2025-09-03
+-Added Dockerfile.Web to push UI image to docker hub through CI.
