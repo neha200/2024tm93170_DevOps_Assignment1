@@ -27,3 +27,4 @@
 ## [1.0.5] - 2025-09-03
 - Added falsk_web.py for application UI
 - Added UI folder with html files for look and feel of the application
+- Fix falsk_api.py import of store
