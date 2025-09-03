@@ -1,44 +1,90 @@
-name: CI (Changelog-gated, Build & Push to Docker Hub)
+name: CI (feature push + merged PR; gated by CHANGELOG.md; push API & Web images)
 
 on:
-  # Run on PRs *into main* when CHANGELOG.md changed
+  # Dev CI on feature branches – only when CHANGELOG.md is touched
+  push:
+    branches: ['feature/**']
+    paths:
+      - 'CHANGELOG.md'
+      - '.github/workflows/ci.yml'  # optional: run when workflow itself changes
+
+  # Release CI when a PR to main is closed (we will check merged==true)
   pull_request:
     branches: [ main ]
-    paths:
-      - "CHANGELOG.md"
-
-  # Run when commits land on main *and* CHANGELOG.md changed
-  push:
-    branches: [ main ]
-    paths:
-      - "CHANGELOG.md"
+    types: [ closed ]
 
 jobs:
-  build-and-test:
-    name: Build & Test (only if CHANGELOG.md changed)
+  # ---------- Dev CI on feature/* pushes ----------
+  feature-build-test:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1  # only current commit is needed
 
-      # Optional: fail fast if the changelog doesn't have a new entry format.
-      # Example rule: require a line starting with "## " added in this commit/PR.
-      - name: Verify CHANGELOG has a new entry
+      - name: Verify CHANGELOG entry on feature push
         run: |
-          if ! git diff --unified=0 HEAD^ -- CHANGELOG.md | grep -E "^\+## "; then
-            echo "No new '## ' entry found in CHANGELOG.md"
+          set -e
+          # Ensure the current commit adds a new "## " heading to CHANGELOG.md
+          if git show --unified=0 HEAD -- CHANGELOG.md | grep -E "^\+## "; then
+            echo "CHANGELOG entry found."
+          else
+            echo "No new '## ' entry added to CHANGELOG.md"
             exit 1
           fi
 
-      - name: Build Docker image
+      - name: Build Docker image (API) for tests
         run: docker build -t app:${{ github.sha }} .
 
       - name: Run tests in container
         run: docker run --rm app:${{ github.sha }} pytest -q
 
-      - name: Smoke check /health
+      - name: Smoke /health (API)
+        run: |
+          CID=$(docker run -d -p 8000:8000 app:${{ github.sha }})
+          sleep 2
+          curl -fsS http://localhost:8000/health | grep -q '"ok"'
+          docker rm -f "$CID" >/dev/null 2>&1 || true
+
+# ---------- Release CI when PR is merged to main ----------
+  release-build-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+    steps:
+      # Check out the MERGE COMMIT that landed on main
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0  # need base & merge history for diff
+
+      - name: Detect CHANGELOG change between base and merge
+        id: changelog
+        run: |
+          set -e
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.merge_commit_sha }}
+          echo "Base: $BASE"
+          echo "Head: $HEAD"
+          if git diff --name-only "$BASE" "$HEAD" | grep -x "CHANGELOG.md"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Stop if CHANGELOG.md did not change
+        if: steps.changelog.outputs.changed != 'true'
+        run: |
+          echo "CHANGELOG.md not changed; skipping release build."
+          exit 78  # neutral
+
+      - name: Build Docker image (API) for tests
+        run: docker build -t app:${{ github.sha }} .
+
+      - name: Run tests in container
+        run: docker run --rm app:${{ github.sha }} pytest -q
+
+      - name: Smoke /health (API)
         run: |
           CID=$(docker run -d -p 8000:8000 app:${{ github.sha }})
           sleep 2
