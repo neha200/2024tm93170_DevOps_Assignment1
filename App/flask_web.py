@@ -1,6 +1,6 @@
 from pathlib import Path
 from flask import Flask, render_template, request, redirect, url_for, flash
-from . import store  # <-- use shared store
+import store  # <-- use shared store
 
 TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "UI"
 app = Flask(__name__, template_folder=str(TEMPLATES_DIR))
