@@ -31,3 +31,6 @@
 
 ## [1.0.6] - 2025-09-03
 -Added Dockerfile.Web to push UI image to docker hub through CI.
+
+## [1.0.7] - 2025-09-03
+- Update CI to push Images of API and Web to Docker Hub

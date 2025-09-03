@@ -90,3 +90,46 @@ jobs:
           sleep 2
           curl -fsS http://localhost:8000/health | grep -q '"ok"'
           docker rm -f "$CID" >/dev/null 2>&1 || true
+
+# ---------- Push BOTH images (API + Web) to Docker Hub after successful release build ----------
+  push-to-docker-hub:
+    needs: release-build-test
+    if: needs.release-build-test.result == 'success'
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - name: api
+            file: Dockerfile
+            tag_latest: latest
+            tag_sha: api-${{ github.sha }}
+          - name: web
+            file: Dockerfile.web
+            tag_latest: web-latest
+            tag_sha: web-${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & Push ${{ matrix.name }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/aceest-fitness:${{ matrix.tag_latest }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/aceest-fitness:${{ matrix.tag_sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-to: type=inline
