@@ -19,3 +19,8 @@
 ## [1.0.3] - 2025-09-02
 - Added pytest for flask_api.py
 - Enabled pytest in ci.yml
+- Added store.py logic for data storage in memory
+
+## [1.0.4] - 2025-09-03
+- Added falsk_web.py for application UI
+- Added UI folder with html files for look and feel of the application
